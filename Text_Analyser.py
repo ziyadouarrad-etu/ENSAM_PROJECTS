@@ -1,91 +1,81 @@
-def sentence_frequency(file_name):
-    with open(f'{file_name}.txt', 'r', encoding='utf-8') as file:
-        content = file.read()
-        sentences = content.split(';')
-        return [s.strip() for s in sentences if s.strip()]
+def read_file(filename):
+    with open(filename, "r", encoding="utf-8") as f:
+        return f.read()
+
+def lexical_analysis(text):
+    word_freq = {}
+    for word in text.split():
+        word = word.strip(",.?!;:(){}[]<>\"")
+        if word.isalpha():
+            if word in word_freq:
+                word_freq[word] += 1
+            else:
+                word_freq[word] = 1
+    return word_freq
+
+def analyze_statistics(word_freq):
+    avg_length = 0
+    most_used = []
+    least_used = []
+    palindromes = []
+    max_freq = max(word_freq.values())
+    min_freq = min(word_freq.values())
+    for word, count in word_freq.items():
+        if word == word[::-1]:
+            palindromes.append(word)
+        if count == max_freq:
+            most_used.append(word)
+        if count == min_freq:
+            least_used.append(word)
+        avg_length += count * len(word)
+    avg_length /= sum(word_freq.values())
+    return avg_length, most_used, least_used, palindromes
+
+def analyze_sentences(text):
+    sentences = text.split(".")
+    punctuations = []
+    for char in text:
+        if not char.isalpha() and char != " " and char not in punctuations:
+            punctuations.append(char)
+    return sentences, punctuations
+
+def top_frequent_words(word_freq, top_n=10):
+    freq_values = sorted(set(word_freq.values()), reverse=True)
+    top_words = []
+    for val in freq_values[:top_n]:
+        same_freq_words = [w for w, c in word_freq.items() if c == val]
+        top_words.append(same_freq_words)
+    return top_words
+
+def sort_sentences_by_length(sentences):
+    swapped = True
+    while swapped:
+        swapped = False
+        for i in range(len(sentences) - 1):
+            if len(sentences[i]) < len(sentences[i + 1]):
+                sentences[i], sentences[i + 1] = sentences[i + 1], sentences[i]
+                swapped = True
+    return sentences
 
 
-def word_frequency(file_name):
-    sentences = sentence_frequency(file_name)
-    unflattened_words = [sentence.split(" ") for sentence in sentences]
-    words = [word for group in unflattened_words for word in group]
-    return [w for w in words if w]
-
-
-def word_mean_length(file_name):
-    words = word_frequency(file_name)
-    if not words:
-        return 0
-    return sum(len(word) for word in words) / len(words)
-
-
-def calculate_word_occurrence(words):
-    occurrences = {}
-    for word in words:
-        occurrences[word] = occurrences.get(word, 0) + 1
-    return occurrences
-
-
-def most_used_words(file_name):
-    words = word_frequency(file_name)
-    occurrences = calculate_word_occurrence(words)
-    if not occurrences:
-        return []
-    max_occ = max(occurrences.values())
-    return [word for word, count in occurrences.items() if count == max_occ]
-
-
-def less_used_words(file_name):
-    words = word_frequency(file_name)
-    occurrences = calculate_word_occurrence(words)
-    if not occurrences:
-        return []
-    min_occ = min(occurrences.values())
-    return [word for word, count in occurrences.items() if count == min_occ]
-
-
-def palindrome_list(file_name):
-    words = word_frequency(file_name)
-    return [word for word in words if word == word[::-1]]
-
-
-def words_per_sentence(file_name):
-    sentences = sentence_frequency(file_name)
-    return [(sentence, len(sentence.split())) for sentence in sentences]
-
-
-def punctuation_types(file_name):
-    with open(f'{file_name}.txt', 'r', encoding='utf-8') as file:
-        text = file.read()
-        punctuations = sorted({char for char in text if not char.isalpha() and char not in [' ', '\n']})
-    return punctuations
-
-
-def analyze_text_file(file_name):
-    print(f"\n=== Analyse du fichier '{file_name}.txt' ===\n")
-
-    sentences = sentence_frequency(file_name)
-    words = word_frequency(file_name)
-
-    print(f"Nombre total de phrases : {len(sentences)}")
-    print(f"Nombre total de mots : {len(words)}")
-    print(f"Longueur moyenne des mots : {round(word_mean_length(file_name), 2)}\n")
-
-    print(f"Mots les plus utilisés : {most_used_words(file_name)}")
-    print(f"Mots les moins utilisés : {less_used_words(file_name)}")
-    print(f"Mots palindromes : {palindrome_list(file_name)}\n")
-
-    print("=== Longueur des phrases (en mots) ===")
-    for sentence, count in words_per_sentence(file_name):
-        print(f'"{sentence}" → {count} mots')
-
-    print(f"\nPonctuations utilisées : {punctuation_types(file_name)}")
-
-
-
-
-file_name = input("Donner le nom du fichier (sans .txt): ")
-try:
-    analyze_text_file(file_name)
-except FileNotFoundError:
-    print("Le fichier spécifié n'existe pas.")
+filename = input("Entrez le nom du fichier à analyser (ex: fichier.txt) : ")
+text = read_file(filename)
+word_freq = lexical_analysis(text)
+avg_length, most_used, least_used, palindromes = analyze_statistics(word_freq)
+sentences, punctuations = analyze_sentences(text)
+top_words = top_frequent_words(word_freq)
+sorted_sentences = sort_sentences_by_length(sentences)
+print("\n--- ANALYSE LEXICALE ---")
+print(word_freq)
+print("Longueur moyenne des mots :", avg_length)
+print("Mots les plus utilisés :", most_used)
+print("Mots les moins utilisés :", least_used)
+print("Mots palindromes :", palindromes)
+print(f"Nombre de phrases : {len(sentences)}")
+print("Ponctuations utilisées :", punctuations)
+print("\nTop 10 des mots les plus fréquents :")
+for i, group in enumerate(top_words, 1):
+    print("-", i, group)
+print("\nPhrases triées par longueur décroissante :")
+for s in sorted_sentences:
+    print(s.strip())
